@@ -8,7 +8,8 @@ let canvas, ctx, scoreDisplay, livesDisplay, levelDisplay, currencyDisplay,
     gameOver = false, paused = false, gameStarted = false, asteroidSpeed = 1,
     asteroidSpawnRate = 2000, bossActive = false, boss = null, bossBullets = [],
     bossDialogueTimer = 0, lastBossPowerUp = 0, hitFlashTimer = 0,
-    backgroundObjects = [], initialLives = 3, asteroidInterval = null, enemyInterval = null;
+    backgroundObjects = [], initialLives = 3, asteroidInterval = null, enemyInterval = null,
+    damageFlashTimer = 0;
 
 const keys = {
   ArrowLeft: false,
@@ -120,6 +121,7 @@ const bulletWidth = 5;
 const bulletHeight = 10;
 const asteroidSize = 30;
 const enemySize = 25;
+const largeEnemySize = 40;
 const bossBulletWidth = 10;
 const bossBulletHeight = 20;
 const bossBulletSpeed = 1.5;
@@ -142,6 +144,10 @@ function resizeStarfield() {
   if (starfieldCanvas) {
     starfieldCanvas.width = window.innerWidth;
     starfieldCanvas.height = window.innerHeight;
+    starfieldCanvas.style.position = 'fixed';
+    starfieldCanvas.style.top = '0';
+    starfieldCanvas.style.left = '0';
+    starfieldCanvas.style.zIndex = '-1';
   }
 }
 
@@ -312,6 +318,7 @@ function initializeGame() {
     returnToMenu();
   });
 
+  initializeStarfield();
   startGame();
 }
 
@@ -448,10 +455,15 @@ function findNearestTarget() {
 
 function updateBullets() {
   bullets.forEach((bullet, index) => {
-    if (bullet.homing && bullet.homing.health && bullet.homing.health <= 0) {
-      bullet.homing = findNearestTarget();
-    }
     if (bullet.homing) {
+      if (!bullet.homing.health || bullet.homing.health <= 0 || 
+          !asteroids.includes(bullet.homing) && !enemies.includes(bullet.homing) && bullet.homing !== boss) {
+        bullet.homing = findNearestTarget();
+        if (!bullet.homing) {
+          bullets.splice(index, 1);
+          return;
+        }
+      }
       const targetX = bullet.homing.x + (bullet.homing.size || bullet.homing.width) / 2;
       const targetY = bullet.homing.y + (bullet.homing.size || bullet.homing.height) / 2;
       const dx = targetX - (bullet.x + bullet.width / 2);
@@ -487,10 +499,10 @@ function spawnAsteroid() {
 function updateAsteroids() {
   asteroids.forEach((asteroid, index) => {
     asteroid.y += asteroidSpeed;
-    
+
     // Verifica se o asteroide saiu da tela
     if (asteroid.y > canvas.height) {
-      // Verifica se o asteroide está alinhado com a nave (mesma lógica de colisão, mas apenas no eixo X)
+      // Verifica se o asteroide está alinhado com a nave no eixo X
       if (
         !player.shield &&
         player.x < asteroid.x + asteroid.size &&
@@ -501,6 +513,7 @@ function updateAsteroids() {
         player.shield = true;
         setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
         hitFlashTimer = Date.now() + 300;
+        damageFlashTimer = Date.now() + 300;
         if (lives <= 0) {
           gameOver = true;
           gameOverScreen.classList.add('show');
@@ -525,6 +538,7 @@ function updateAsteroids() {
       player.shield = true;
       setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
       hitFlashTimer = Date.now() + 300;
+      damageFlashTimer = Date.now() + 300;
       asteroids.splice(index, 1);
       spawnParticles(asteroid.x + asteroid.size / 2, asteroid.y + asteroid.size / 2, 5);
       if (lives <= 0) {
@@ -572,13 +586,16 @@ function drawAsteroids() {
 
 function spawnEnemy() {
   if (bossActive || level < 7 || enemies.length >= 3) return;
+  const isLargeEnemy = level >= 10 && Math.random() < 0.25;
   enemies.push({
-    x: Math.random() * (canvas.width - enemySize),
-    y: -enemySize,
-    size: enemySize,
-    speed: 2,
+    x: Math.random() * (canvas.width - (isLargeEnemy ? largeEnemySize : enemySize)),
+    y: -(isLargeEnemy ? largeEnemySize : enemySize),
+    size: isLargeEnemy ? largeEnemySize : enemySize,
+    speed: isLargeEnemy ? 1 : 2 + (level - 7) * 0.05,
     movementPattern: 'zigzag',
-    zigzagPhase: Math.random() * Math.PI * 2
+    zigzagPhase: Math.random() * Math.PI * 2,
+    health: isLargeEnemy ? 3 : 1,
+    isLargeEnemy: isLargeEnemy
   });
 }
 
@@ -588,11 +605,32 @@ function updateEnemies() {
     if (enemy.movementPattern === 'zigzag') {
       enemy.x += Math.sin(enemy.zigzagPhase + Date.now() * 0.005) * 3;
     }
-    if (enemy.y > canvas.height || enemy.x < -enemy.size || enemy.x > canvas.width) {
+    // Verifica se o inimigo saiu da tela
+    if (enemy.y > canvas.height) {
+      // Verifica se o inimigo está alinhado com a nave no eixo X
+      if (
+        !player.shield &&
+        player.x < enemy.x + enemy.size &&
+        player.x + player.width > enemy.x
+      ) {
+        lives--;
+        livesDisplay.textContent = `Vidas: ${lives}`;
+        player.shield = true;
+        setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
+        hitFlashTimer = Date.now() + 300;
+        damageFlashTimer = Date.now() + 300;
+        if (lives <= 0) {
+          gameOver = true;
+          gameOverScreen.classList.add('show');
+          finalScoreDisplay.textContent = `Pontos: ${score}`;
+          localStorage.setItem('currency', currency);
+        }
+      }
       enemies.splice(index, 1);
       return;
     }
 
+    // Colisão com a nave
     if (
       !player.shield &&
       player.x < enemy.x + enemy.size &&
@@ -605,14 +643,19 @@ function updateEnemies() {
       player.shield = true;
       setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
       hitFlashTimer = Date.now() + 300;
+      damageFlashTimer = Date.now() + 300;
+      enemies.splice(index, 1);
+      spawnParticles(enemy.x + enemy.size / 2, enemy.y + enemy.size / 2, 8);
       if (lives <= 0) {
         gameOver = true;
         gameOverScreen.classList.add('show');
         finalScoreDisplay.textContent = `Pontos: ${score}`;
         localStorage.setItem('currency', currency);
       }
+      return;
     }
 
+    // Colisão com balas
     bullets.forEach((bullet, bulletIndex) => {
       if (
         bullet.x < enemy.x + enemy.size &&
@@ -620,23 +663,26 @@ function updateEnemies() {
         bullet.y < enemy.y + enemy.size &&
         bullet.y + bullet.height > enemy.y
       ) {
-        enemies.splice(index, 1);
+        enemy.health--;
         bullets.splice(bulletIndex, 1);
-        spawnParticles(enemy.x + enemy.size / 2, enemy.y + enemy.size / 2, 8);
-        score += 15;
-        currency += 3;
-        localStorage.setItem('currency', currency);
-        currencyDisplay.textContent = `Moedas: ${currency}`;
-        scoreDisplay.textContent = `Pontos: ${score}`;
-        if (Math.random() < 0.2) spawnPowerUp(enemy.x, enemy.y);
+        if (enemy.health <= 0) {
+          enemies.splice(index, 1);
+          spawnParticles(enemy.x + enemy.size / 2, enemy.y + enemy.size / 2, 8);
+          score += 15;
+          currency += 3;
+          localStorage.setItem('currency', currency);
+          currencyDisplay.textContent = `Moedas: ${currency}`;
+          scoreDisplay.textContent = `Pontos: ${score}`;
+          if (Math.random() < 0.2) spawnPowerUp(enemy.x, enemy.y);
+        }
       }
     });
   });
 }
 
 function drawEnemies() {
-  ctx.fillStyle = '#ff5555';
   enemies.forEach(enemy => {
+    ctx.fillStyle = enemy.isLargeEnemy ? '#ff8800' : '#ff5555';
     ctx.beginPath();
     ctx.arc(enemy.x + enemy.size / 2, enemy.y + enemy.size / 2, enemy.size / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -865,6 +911,7 @@ function updateBoss() {
     player.shield = true;
     setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
     hitFlashTimer = Date.now() + 300;
+    damageFlashTimer = Date.now() + 300;
     if (lives <= 0) {
       gameOver = true;
       gameOverScreen.classList.add('show');
@@ -923,7 +970,7 @@ function updateBoss() {
           if (enemyInterval) clearInterval(enemyInterval);
           enemyInterval = setInterval(() => {
             if (!gameOver && !paused && gameStarted) spawnEnemy();
-          }, enemySpawnRate);
+          }, enemySpawnRate - (level - 7) * 100);
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawStars();
@@ -956,6 +1003,7 @@ function updateBossBullets() {
       player.shield = true;
       setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
       hitFlashTimer = Date.now() + 300;
+      damageFlashTimer = Date.now() + 300;
       bossBullets.splice(index, 1);
       if (lives <= 0) {
         gameOver = true;
@@ -1208,7 +1256,7 @@ function togglePause() {
             console.log('Gerando inimigo após retomar...');
             spawnEnemy();
           }
-        }, enemySpawnRate);
+        }, Math.max(3000, enemySpawnRate - (level - 7) * 100));
       }
     }
     requestAnimationFrame(gameLoop);
@@ -1218,8 +1266,8 @@ function togglePause() {
 function updateLevel() {
   if (score >= level * 100) {
     level++;
-    asteroidSpeed += 0.1;
-    asteroidSpawnRate = Math.max(500, asteroidSpawnRate - 30);
+    asteroidSpeed += 0.15;
+    asteroidSpawnRate = Math.max(500, asteroidSpawnRate - 50);
     if (asteroidInterval) clearInterval(asteroidInterval);
     asteroidInterval = setInterval(() => {
       if (!gameOver && !paused && gameStarted) {
@@ -1233,7 +1281,7 @@ function updateLevel() {
           console.log('Gerando inimigo no nível', level);
           spawnEnemy();
         }
-      }, enemySpawnRate);
+      }, Math.max(3000, enemySpawnRate - (level - 7) * 100));
     }
     if ([5, 10, 15, 20].includes(level) && !bossActive) {
       dialogue.textContent = 'Prepare-se! Um chefe está chegando!';
@@ -1279,6 +1327,13 @@ function gameLoop() {
   updateParticles();
   drawParticles();
   updateLevel();
+  if (Date.now() < damageFlashTimer) {
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
   if (Date.now() - gameStartTime >= 300000 && !achievements.find(a => a.id === 'survive_5_minutes').unlocked && lives > 0) {
     unlockAchievement('survive_5_minutes');
   }
@@ -1467,6 +1522,10 @@ if (currentPage === 'index.html' || currentPage === '') {
   } else {
     console.error('Botão de reiniciar progresso não encontrado em index.html.');
   }
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Carregando index.html...');
+    initializeStarfield();
+  });
 } else if (currentPage === 'game.html') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log('Carregando game.html...');
@@ -1475,6 +1534,7 @@ if (currentPage === 'index.html' || currentPage === '') {
 } else if (currentPage === 'shop.html') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log('Carregando shop.html...');
+    initializeStarfield();
     updateShop();
   });
 } else if (currentPage === 'achievements.html' || currentPage === 'lore.html') {
