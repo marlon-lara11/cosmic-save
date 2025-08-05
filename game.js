@@ -502,12 +502,7 @@ function updateAsteroids() {
 
     // Verifica se o asteroide saiu da tela
     if (asteroid.y > canvas.height) {
-      // Verifica se o asteroide está alinhado com a nave no eixo X
-      if (
-        !player.shield &&
-        player.x < asteroid.x + asteroid.size &&
-        player.x + player.width > asteroid.x
-      ) {
+      if (!player.shield) {
         lives--;
         livesDisplay.textContent = `Vidas: ${lives}`;
         player.shield = true;
@@ -607,12 +602,7 @@ function updateEnemies() {
     }
     // Verifica se o inimigo saiu da tela
     if (enemy.y > canvas.height) {
-      // Verifica se o inimigo está alinhado com a nave no eixo X
-      if (
-        !player.shield &&
-        player.x < enemy.x + enemy.size &&
-        player.x + player.width > enemy.x
-      ) {
+      if (!player.shield) {
         lives--;
         livesDisplay.textContent = `Vidas: ${lives}`;
         player.shield = true;
