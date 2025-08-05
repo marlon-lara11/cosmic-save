@@ -89,7 +89,8 @@ const ships = [
   { id: 'rainbow', name: 'Nave Arco-Íris', color: 'rainbow', cost: 0, unlocked: localStorage.getItem('achievement_defeat_emperor_zethar') === 'true' || false },
   { id: 'fire', name: 'Nave de Fogo', color: '#ff4444', cost: 500, unlocked: localStorage.getItem('ship_fire') === 'true' || false },
   { id: 'ice', name: 'Nave de Gelo', color: '#00b7eb', cost: 500, unlocked: localStorage.getItem('ship_ice') === 'true' || false },
-  { id: 'plasma', name: 'Nave de Plasma', color: '#aa00ff', cost: 500, unlocked: localStorage.getItem('ship_plasma') === 'true' || false }
+  { id: 'plasma', name: 'Nave de Plasma', color: '#aa00ff', cost: 500, unlocked: localStorage.getItem('ship_plasma') === 'true' || false },
+  { id: 'black_hole', name: 'Nave de Singularidade', color: '#000000', cost: 1200, unlocked: localStorage.getItem('ship_black_hole') === 'true' || false }
 ];
 let currentShip = ships.find(ship => ship.id === (localStorage.getItem('currentShip') || 'default')) || ships[0];
 
@@ -354,45 +355,62 @@ function drawPlayer() {
   ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
   const rotation = (keys && (keys.ArrowLeft || touchState.dx < 0)) ? -0.2 : (keys && (keys.ArrowRight || touchState.dx > 0)) ? 0.2 : 0;
   ctx.rotate(rotation);
-  ctx.fillStyle = currentShip.color === 'rainbow' ? `hsl(${Date.now() % 360}, 70%, 50%)` : currentShip.color;
-  if (player.shield) ctx.fillStyle = '#00ffff';
-  if (player.spreadShot || player.homingShot || player.doubleShot) {
-    ctx.shadowColor = '#ff00ff';
-    ctx.shadowBlur = 15;
-  }
-  ctx.beginPath();
-  ctx.moveTo(0, -player.height / 2);
-  ctx.lineTo(-player.width / 2, player.height / 2);
-  ctx.lineTo(player.width / 2, player.height / 2);
-  ctx.closePath();
-  ctx.fill();
-  if (currentShip.id === 'fire') {
-    ctx.fillStyle = '#ff8800';
+  if (currentShip.id === 'black_hole') {
+    ctx.fillStyle = '#000000';
+    ctx.strokeStyle = '#8b0000';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(-player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
-    ctx.arc(player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (currentShip.id === 'ice') {
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
-    ctx.arc(player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (currentShip.id === 'plasma') {
-    ctx.fillStyle = '#ff00ff';
-    ctx.beginPath();
-    ctx.rect(-player.width / 2, 0, 5, player.height / 2);
-    ctx.rect(player.width / 2 - 5, 0, 5, player.height / 2);
-    ctx.fill();
-  }
-  if ((keys && keys.ArrowUp) || touchState.dy < 0) {
-    ctx.fillStyle = '#ff8800';
-    ctx.beginPath();
-    ctx.moveTo(-player.width / 4, player.height / 2);
-    ctx.lineTo(player.width / 4, player.height / 2);
-    ctx.lineTo(0, player.height / 2 + 10 + Math.random() * 5);
+    ctx.moveTo(0, -player.height / 2);
+    ctx.lineTo(-player.width / 2, player.height / 2);
+    ctx.lineTo(player.width / 2, player.height / 2);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(139, 0, 0, ${Math.sin(Date.now() * 0.005) * 0.5 + 0.5})`;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = currentShip.color === 'rainbow' ? `hsl(${Date.now() % 360}, 70%, 50%)` : currentShip.color;
+    if (player.shield) ctx.fillStyle = '#00ffff';
+    if (player.spreadShot || player.homingShot || player.doubleShot) {
+      ctx.shadowColor = '#ff00ff';
+      ctx.shadowBlur = 15;
+    }
+    ctx.beginPath();
+    ctx.moveTo(0, -player.height / 2);
+    ctx.lineTo(-player.width / 2, player.height / 2);
+    ctx.lineTo(player.width / 2, player.height / 2);
+    ctx.closePath();
+    ctx.fill();
+    if (currentShip.id === 'fire') {
+      ctx.fillStyle = '#ff8800';
+      ctx.beginPath();
+      ctx.arc(-player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
+      ctx.arc(player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (currentShip.id === 'ice') {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
+      ctx.arc(player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (currentShip.id === 'plasma') {
+      ctx.fillStyle = '#ff00ff';
+      ctx.beginPath();
+      ctx.rect(-player.width / 2, 0, 5, player.height / 2);
+      ctx.rect(player.width / 2 - 5, 0, 5, player.height / 2);
+      ctx.fill();
+    }
+    if ((keys && keys.ArrowUp) || touchState.dy < 0) {
+      ctx.fillStyle = '#ff8800';
+      ctx.beginPath();
+      ctx.moveTo(-player.width / 4, player.height / 2);
+      ctx.lineTo(player.width / 4, player.height / 2);
+      ctx.lineTo(0, player.height / 2 + 10 + Math.random() * 5);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
   ctx.restore();
 }
@@ -402,14 +420,14 @@ function shoot() {
   if (now - player.lastShot >= player.fireRate) {
     if (player.spreadShot) {
       bullets.push(
-        { x: player.x + player.width / 2 - bulletWidth / 2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: -2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null }
+        { x: player.x + player.width / 2 - bulletWidth / 2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
+        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: -2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
+        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null }
       );
     } else if (player.doubleShot) {
       bullets.push(
-        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null }
+        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
+        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null }
       );
     } else {
       bullets.push({
@@ -419,7 +437,8 @@ function shoot() {
         height: bulletHeight,
         dx: 0,
         dy: -bulletSpeed,
-        homing: player.homingShot ? findNearestTarget() : null
+        homing: player.homingShot ? findNearestTarget() : null,
+        effect: currentShip.id === 'black_hole' ? 'distortion' : null
       });
     }
     player.lastShot = now;
@@ -482,8 +501,16 @@ function updateBullets() {
 
 function drawBullets() {
   bullets.forEach(bullet => {
-    ctx.fillStyle = bullet.homing ? '#ff00ff' : player.doubleShot ? '#ffff00' : '#ff4444';
+    ctx.save();
+    if (bullet.effect === 'distortion') {
+      ctx.fillStyle = '#ff0000';
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10;
+    } else {
+      ctx.fillStyle = bullet.homing ? '#ff00ff' : player.doubleShot ? '#ffff00' : '#ff4444';
+    }
     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+    ctx.restore();
   });
 }
 
@@ -1358,8 +1385,18 @@ function updateShop() {
   shipItems.innerHTML = '';
   ships.forEach(ship => {
     const div = document.createElement('div');
-    div.className = `shop-item ${ship.unlocked ? '' : 'locked'} ${currentShip.id === ship.id ? 'selected' : ''}`;
+    div.className = `shop-item ${ship.unlocked ? '' : 'locked'} ${currentShip.id === ship.id ? 'selected' : ''} ${ship.cost >= 1000 || ship.id === 'rainbow' || ship.id === 'black_hole' ? 'legendary' : ''}`;
     let buttonHTML = '';
+    let rarity = '';
+    if (ship.id === 'default') {
+      rarity = 'Comum';
+    } else if (ship.id === 'rainbow' || ship.id === 'black_hole') {
+      rarity = 'Lendária';
+    } else if (ship.cost === 500) {
+      rarity = 'Rara';
+    } else {
+      rarity = 'Épica';
+    }
     if (ship.id === 'rainbow' && !ship.unlocked) {
       buttonHTML = `<span class="locked-message">Derrote o Imperador Zethar para desbloquear</span>`;
     } else if (ship.unlocked) {
@@ -1369,6 +1406,7 @@ function updateShop() {
     }
     div.innerHTML = `
       <span class="ship-name">${ship.name}</span>
+      <span class="ship-rarity">${rarity}</span>
       ${ship.id === 'rainbow' ? '' : `<span class="ship-cost">Custo: ${ship.cost} Moedas</span>`}
       ${buttonHTML}
     `;
