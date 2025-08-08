@@ -4,7 +4,7 @@ let canvas, ctx, scoreDisplay, livesDisplay, levelDisplay, currencyDisplay,
     startScreen, pauseScreen, gameOverScreen, bossWarning, finalScoreDisplay,
     startGameBtn, resumeBtn, restartBtn, restartPauseBtn, dialogue,
     achievementNotification, touchControls, joystickBase, joystickKnob, touchShoot,
-    score = 0, lives = 3, level = 1, currency = parseInt(localStorage.getItem('currency')) || 0,
+    score = 0, lives = 3, level = 1, currency =  parseInt(localStorage.getItem('currency')) || 0
     gameOver = false, paused = false, gameStarted = false, asteroidSpeed = 1,
     asteroidSpawnRate = 2000, bossActive = false, boss = null, bossBullets = [],
     bossDialogueTimer = 0, lastBossPowerUp = 0, hitFlashTimer = 0,
@@ -63,34 +63,38 @@ const achievements = [
 
 const upgrades = {
   health: {
-    levels: [3, 4, 5, 6, 7, 8, 9, 10],
-    costs: [100, 200, 400, 800, 1600, 3200, 6404, 12800],
-    level: parseInt(localStorage.getItem('healthLevel')) || 0
-  },
+  levels: [3, 4, 5, 6, 7, 8, 9, 10], // Capped at 10
+  costs: [100, 200, 400, 800, 1600, 3200, 6400],
+  level: parseInt(localStorage.getItem('healthLevel')) || 0
+},
   powerUpDuration: {
-    levels: [10000, 12000, 14000, 16000, 18000, 20000],
-    costs: [150, 300, 600, 1200, 2400],
-    level: parseInt(localStorage.getItem('powerUpDurationLevel')) || 0
-  },
+  levels: [5000, 6000, 7000, 8000, 9000, 10000], // 5s to 10s
+  costs: [150, 300, 600, 1200, 2400],
+  level: parseInt(localStorage.getItem('powerUpDurationLevel')) || 0
+},
   speed: {
     levels: [5, 6, 7, 8],
-    costs: [100, 200, 400, 800],
+    costs: [100, 200, 400],
     level: parseInt(localStorage.getItem('speedLevel')) || 0
   },
   fireRate: {
-    levels: [500, 400, 300, 200],
-    costs: [150, 300, 600, 1200],
-    level: parseInt(localStorage.getItem('fireRateLevel')) || 0
+  levels: [500, 400, 300, 250], // Adjusted max to 250 to ensure shooting
+  costs: [150, 300, 600],
+  level: parseInt(localStorage.getItem('fireRateLevel')) || 0
   }
 };
 
 const ships = [
-  { id: 'default', name: 'Nave Padrão', color: '#00ff88', cost: 0, unlocked: true },
-  { id: 'rainbow', name: 'Nave Arco-Íris', color: 'rainbow', cost: 0, unlocked: localStorage.getItem('achievement_defeat_emperor_zethar') === 'true' || false },
-  { id: 'fire', name: 'Nave de Fogo', color: '#ff4444', cost: 500, unlocked: localStorage.getItem('ship_fire') === 'true' || false },
-  { id: 'ice', name: 'Nave de Gelo', color: '#00b7eb', cost: 500, unlocked: localStorage.getItem('ship_ice') === 'true' || false },
-  { id: 'plasma', name: 'Nave de Plasma', color: '#aa00ff', cost: 500, unlocked: localStorage.getItem('ship_plasma') === 'true' || false },
-  { id: 'black_hole', name: 'Nave de Singularidade', color: '#000000', cost: 1200, unlocked: localStorage.getItem('ship_black_hole') === 'true' || false }
+  { id: 'default', name: 'Nave Padrão', color: '#00ff88', cost: 0, unlocked: true, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
+  { id: 'rainbow', name: 'Nave Arco-Íris', color: 'rainbow', cost: 0, unlocked: localStorage.getItem('achievement_defeat_emperor_zethar') === 'true' || false, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
+  { id: 'fire', name: 'Nave de Fogo', color: '#ff4444', cost: 500, unlocked: localStorage.getItem('ship_fire') === 'true' || false, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
+  { id: 'ice', name: 'Nave de Gelo', color: '#00b7eb', cost: 500, unlocked: localStorage.getItem('ship_ice') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#00b7eb', laserShape: 'rect' },
+  { id: 'plasma', name: 'Nave de Plasma', color: '#aa00ff', cost: 500, unlocked: localStorage.getItem('ship_plasma') === 'true' || false, thrusterColor: '#ff00ff', laserColor: '#ff00ff', laserShape: 'rect' },
+  { id: 'black_hole', name: 'Nave de Singularidade', color: '#000000', cost: 1200, unlocked: localStorage.getItem('ship_black_hole') === 'true' || false, thrusterColor: '#8b0000', laserColor: '#ff0000', laserShape: 'rect', effect: 'distortion' },
+  { id: 'nebula', name: 'Nave de Nebulosa', color: 'gradient', cost: 1000, unlocked: localStorage.getItem('ship_nebula') === 'true' || false, thrusterColor: 'gradient', laserColor: '#aa00ff', laserShape: 'rect' },
+  { id: 'stellar_crystal', name: 'Nave de Cristal Estelar', color: '#00b7eb', cost: 1000, unlocked: localStorage.getItem('ship_stellar_crystal') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#ffffff', laserShape: 'rect' },
+  { id: 'alien_relic', name: 'Nave de Relíquia Alienígena', color: '#006400', cost: 1000, unlocked: localStorage.getItem('ship_alien_relic') === 'true' || false, thrusterColor: '#00ff00', laserColor: '#00ff00', laserShape: 'rect' },
+  { id: 'cosmic_storm', name: 'Nave de Tempestade Cósmica', color: '#333333', cost: 1000, unlocked: localStorage.getItem('ship_cosmic_storm') === 'true' || false, thrusterColor: '#00b7eb', laserColor: '#00b7eb', laserShape: 'rect' }
 ];
 let currentShip = ships.find(ship => ship.id === (localStorage.getItem('currentShip') || 'default')) || ships[0];
 
@@ -152,12 +156,149 @@ function resizeStarfield() {
   }
 }
 
+function createStars() {
+  stars.length = 0;
+  for (let i = 0; i < 50; i++) {
+    stars.push({
+      x: Math.random() * (starfieldCanvas ? starfieldCanvas.width : canvas.width),
+      y: Math.random() * (starfieldCanvas ? starfieldCanvas.height : canvas.height),
+      size: Math.random() * 2 + 1,
+      speed: Math.random() * 0.5 + 0.1
+    });
+  }
+  backgroundObjects.length = 0;
+  for (let i = 0; i < 3; i++) {
+    backgroundObjects.push({
+      x: Math.random() * (starfieldCanvas ? starfieldCanvas.width : canvas.width),
+      y: Math.random() * (starfieldCanvas ? starfieldCanvas.height : canvas.height),
+      size: Math.random() * 100 + 50,
+      opacity: Math.random() * 0.2 + 0.1,
+      speed: Math.random() * 0.2 + 0.05
+    });
+  }
+}
+
+function drawStars() {
+  const targetCtx = starfieldCtx || ctx;
+  backgroundObjects.forEach(obj => {
+    targetCtx.fillStyle = `rgba(100, 100, 255, ${obj.opacity})`;
+    targetCtx.beginPath();
+    targetCtx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
+    targetCtx.fill();
+  });
+  targetCtx.fillStyle = '#fff';
+  stars.forEach(star => {
+    targetCtx.beginPath();
+    targetCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+    targetCtx.fill();
+  });
+}
+
+function updateStars() {
+  stars.forEach(star => {
+    star.y += star.speed;
+    if (star.y > (starfieldCanvas ? starfieldCanvas.height : canvas.height)) star.y = 0;
+  });
+  backgroundObjects.forEach(obj => {
+    obj.y += obj.speed;
+    if (obj.y > (starfieldCanvas ? starfieldCanvas.height : canvas.height) + obj.size) obj.y = -obj.size;
+  });
+}
+
 function animateStarfield() {
   if (!starfieldCtx) return;
   starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
   drawStars();
   updateStars();
   requestAnimationFrame(animateStarfield);
+}
+
+function spawnParticles(x, y, count, type = 'default') {
+  for (let i = 0; i < count; i++) {
+    let particle;
+    if (type === 'nebula') {
+      particle = {
+        x: x,
+        y: y,
+        size: Math.random() * 3 + 1,
+        color: ['#aa00ff', '#0000ff', '#ff69b4'][Math.floor(Math.random() * 3)],
+        speed: Math.random() * 2 + 1,
+        angle: Math.random() * Math.PI * 2,
+        type: 'nebula',
+        orbitRadius: 5 + Math.random() * 5
+      };
+    } else if (type === 'cosmic_storm') {
+      particle = {
+        x: x,
+        y: y,
+        size: Math.random() * 2 + 1,
+        color: '#00b7eb',
+        speed: Math.random() * 3 + 1,
+        angle: Math.random() * Math.PI * 2,
+        type: 'cosmic_storm',
+        life: Math.random() * 20 + 10
+      };
+    } else {
+      particle = {
+        x: x,
+        y: y,
+        size: Math.random() * 5 + 2,
+        dx: Math.random() * 4 - 2,
+        dy: Math.random() * 4 - 2,
+        life: 30,
+        color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+        alpha: 1,
+        type: 'default'
+      };
+    }
+    particles.push(particle);
+  }
+}
+
+function updateParticles() {
+  particles.forEach((particle, index) => {
+    if (particle.type === 'nebula') {
+      particle.angle += 0.05;
+      particle.x = player.x + player.width / 2 + Math.cos(particle.angle) * particle.orbitRadius;
+      particle.y = player.y + player.height + Math.sin(particle.angle) * particle.orbitRadius;
+    } else if (particle.type === 'cosmic_storm') {
+      particle.x += Math.cos(particle.angle) * particle.speed;
+      particle.y += Math.sin(particle.angle) * particle.speed;
+      particle.life--;
+      if (particle.life <= 0) {
+        particles.splice(index, 1);
+      }
+    } else {
+      particle.x += particle.dx;
+      particle.y += particle.dy;
+      particle.life--;
+      particle.alpha = particle.life / 30;
+      if (particle.life <= 0) {
+        particles.splice(index, 1);
+      }
+    }
+  });
+}
+
+function drawParticles() {
+  particles.forEach(particle => {
+    ctx.save();
+    if (particle.type === 'cosmic_storm') {
+      ctx.strokeStyle = particle.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(particle.x, particle.y);
+      ctx.lineTo(particle.x + Math.cos(particle.angle) * 10, particle.y + Math.sin(particle.angle) * 10);
+      ctx.stroke();
+    } else {
+      ctx.globalAlpha = particle.alpha || 1;
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
 }
 
 function initializeGame() {
@@ -304,50 +445,26 @@ function initializeGame() {
 
   startGameBtn.addEventListener('click', () => {
     console.log('Botão Iniciar Jogo clicado');
+    playSound('menuClick'); // Adicionado
     startGame();
   });
   resumeBtn.addEventListener('click', () => {
     console.log('Botão Continuar clicado');
+    playSound('menuClick'); // Adicionado
     togglePause();
   });
   restartBtn.addEventListener('click', () => {
     console.log('Botão Reiniciar (Game Over) clicado');
+    playSound('menuClick'); // Adicionado
     returnToMenu();
   });
   restartPauseBtn.addEventListener('click', () => {
     console.log('Botão Reiniciar (Pausa) clicado');
+    playSound('menuClick'); // Adicionado
     returnToMenu();
   });
 
   initializeStarfield();
-  startGame();
-}
-
-function updatePlayer() {
-  player.dx = 0;
-  player.dy = 0;
-
-  if (keys.ArrowLeft) player.dx = -player.speed;
-  if (keys.ArrowRight) player.dx = player.speed;
-  if (keys.ArrowUp) player.dy = -player.speed;
-  if (keys.ArrowDown) player.dy = player.speed;
-
-  if (touchState.dx !== 0 || touchState.dy !== 0) {
-    player.dx = touchState.dx;
-    player.dy = touchState.dy;
-  }
-
-  player.x += player.dx;
-  player.y += player.dy;
-
-  if (player.x < 0) player.x = 0;
-  if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-  if (player.y < 0) player.y = 0;
-  if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-  if ((keys.Space || touchState.shoot) && !gameOver && !paused && gameStarted) {
-    shoot();
-  }
 }
 
 function drawPlayer() {
@@ -355,7 +472,38 @@ function drawPlayer() {
   ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
   const rotation = (keys && (keys.ArrowLeft || touchState.dx < 0)) ? -0.2 : (keys && (keys.ArrowRight || touchState.dx > 0)) ? 0.2 : 0;
   ctx.rotate(rotation);
-  if (currentShip.id === 'black_hole') {
+
+  if (currentShip.id === 'nebula') {
+    const gradient = ctx.createLinearGradient(-player.width / 2, -player.height / 2, player.width / 2, player.height / 2);
+    gradient.addColorStop(0, '#aa00ff');
+    gradient.addColorStop(0.5, '#0000ff');
+    gradient.addColorStop(1, '#ff69b4');
+    ctx.fillStyle = gradient;
+  } else if (currentShip.id === 'stellar_crystal') {
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = currentShip.color;
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 10;
+  } else if (currentShip.id === 'alien_relic') {
+    ctx.fillStyle = currentShip.color;
+    ctx.shadowColor = '#00ff00';
+    ctx.shadowBlur = 5;
+    ctx.font = '12px Arial';
+    ctx.fillStyle = '#00ff00';
+    ctx.fillText('ᚼ', -player.width / 2 + 5, -player.height / 2 + 10);
+    ctx.fillText('ᚺ', player.width / 2 - 15, player.height / 2 - 5);
+  } else if (currentShip.id === 'cosmic_storm') {
+    ctx.fillStyle = currentShip.color;
+    if (Math.random() < 0.1) {
+      ctx.strokeStyle = '#00b7eb';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
+      ctx.stroke();
+      spawnParticles(player.x + player.width / 2, player.y + player.height / 2, 1, 'cosmic_storm');
+    }
+  } else if (currentShip.id === 'black_hole') {
     ctx.fillStyle = '#000000';
     ctx.strokeStyle = '#8b0000';
     ctx.lineWidth = 2;
@@ -370,48 +518,78 @@ function drawPlayer() {
     ctx.arc(0, 0, 20, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(139, 0, 0, ${Math.sin(Date.now() * 0.005) * 0.5 + 0.5})`;
     ctx.stroke();
+  } else if (currentShip.id === 'rainbow') {
+    ctx.fillStyle = `hsl(${Date.now() % 360}, 70%, 50%)`;
   } else {
-    ctx.fillStyle = currentShip.color === 'rainbow' ? `hsl(${Date.now() % 360}, 70%, 50%)` : currentShip.color;
+    ctx.fillStyle = currentShip.color;
     if (player.shield) ctx.fillStyle = '#00ffff';
     if (player.spreadShot || player.homingShot || player.doubleShot) {
       ctx.shadowColor = '#ff00ff';
       ctx.shadowBlur = 15;
     }
-    ctx.beginPath();
-    ctx.moveTo(0, -player.height / 2);
-    ctx.lineTo(-player.width / 2, player.height / 2);
-    ctx.lineTo(player.width / 2, player.height / 2);
-    ctx.closePath();
-    ctx.fill();
-    if (currentShip.id === 'fire') {
-      ctx.fillStyle = '#ff8800';
-      ctx.beginPath();
-      ctx.arc(-player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
-      ctx.arc(player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (currentShip.id === 'ice') {
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(-player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
-      ctx.arc(player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (currentShip.id === 'plasma') {
-      ctx.fillStyle = '#ff00ff';
-      ctx.beginPath();
-      ctx.rect(-player.width / 2, 0, 5, player.height / 2);
-      ctx.rect(player.width / 2 - 5, 0, 5, player.height / 2);
-      ctx.fill();
-    }
-    if ((keys && keys.ArrowUp) || touchState.dy < 0) {
-      ctx.fillStyle = '#ff8800';
-      ctx.beginPath();
-      ctx.moveTo(-player.width / 4, player.height / 2);
-      ctx.lineTo(player.width / 4, player.height / 2);
-      ctx.lineTo(0, player.height / 2 + 10 + Math.random() * 5);
-      ctx.closePath();
-      ctx.fill();
-    }
   }
+
+  ctx.beginPath();
+  ctx.moveTo(0, -player.height / 2);
+  ctx.lineTo(-player.width / 2, player.height / 2);
+  ctx.lineTo(player.width / 2, player.height / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  if (currentShip.id === 'fire') {
+    ctx.fillStyle = '#ff8800';
+    ctx.beginPath();
+    ctx.arc(-player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
+    ctx.arc(player.width / 4, player.height / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (currentShip.id === 'ice') {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
+    ctx.arc(player.width / 4, -player.height / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (currentShip.id === 'plasma') {
+    ctx.fillStyle = '#ff00ff';
+    ctx.beginPath();
+    ctx.rect(-player.width / 2, 0, 5, player.height / 2);
+    ctx.rect(player.width / 2 - 5, 0, 5, player.height / 2);
+    ctx.fill();
+  }
+
+  if ((keys && keys.ArrowUp) || touchState.dy < 0) {
+    ctx.beginPath();
+    ctx.moveTo(-player.width / 4, player.height / 2);
+    ctx.lineTo(player.width / 4, player.height / 2);
+    ctx.lineTo(0, player.height / 2 + 10 + Math.random() * 5);
+    ctx.closePath();
+    if (currentShip.id === 'nebula') {
+      const gradient = ctx.createLinearGradient(0, player.height / 2, 0, player.height / 2 + 15);
+      gradient.addColorStop(0, '#aa00ff');
+      gradient.addColorStop(1, '#0000ff');
+      ctx.fillStyle = gradient;
+      spawnParticles(player.x + player.width / 2, player.y + player.height, 2, 'nebula');
+    } else if (currentShip.id === 'stellar_crystal') {
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 15;
+    } else if (currentShip.id === 'alien_relic') {
+      ctx.fillStyle = '#00ff00';
+      ctx.shadowColor = '#00ff00';
+      ctx.shadowBlur = 10;
+    } else if (currentShip.id === 'cosmic_storm') {
+      ctx.fillStyle = '#00b7eb';
+      ctx.shadowColor = '#00b7eb';
+      ctx.shadowBlur = 10;
+    } else if (currentShip.id === 'black_hole') {
+      ctx.fillStyle = '#8b0000';
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10;
+    } else {
+      ctx.fillStyle = currentShip.thrusterColor;
+    }
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 
@@ -420,14 +598,14 @@ function shoot() {
   if (now - player.lastShot >= player.fireRate) {
     if (player.spreadShot) {
       bullets.push(
-        { x: player.x + player.width / 2 - bulletWidth / 2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: -2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null }
+        { x: player.x + player.width / 2 - bulletWidth / 2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.effect },
+        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: -2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.effect },
+        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 2, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.effect }
       );
     } else if (player.doubleShot) {
       bullets.push(
-        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null },
-        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.id === 'black_hole' ? 'distortion' : null }
+        { x: player.x + player.width / 2 - bulletWidth / 2 - 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.effect },
+        { x: player.x + player.width / 2 - bulletWidth / 2 + 10, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, dx: 0, dy: -bulletSpeed, homing: player.homingShot ? findNearestTarget() : null, effect: currentShip.effect }
       );
     } else {
       bullets.push({
@@ -438,7 +616,7 @@ function shoot() {
         dx: 0,
         dy: -bulletSpeed,
         homing: player.homingShot ? findNearestTarget() : null,
-        effect: currentShip.id === 'black_hole' ? 'distortion' : null
+        effect: currentShip.effect
       });
     }
     player.lastShot = now;
@@ -503,11 +681,15 @@ function drawBullets() {
   bullets.forEach(bullet => {
     ctx.save();
     if (bullet.effect === 'distortion') {
-      ctx.fillStyle = '#ff0000';
+      ctx.fillStyle = currentShip.laserColor;
       ctx.shadowColor = '#ff0000';
       ctx.shadowBlur = 10;
     } else {
-      ctx.fillStyle = bullet.homing ? '#ff00ff' : player.doubleShot ? '#ffff00' : '#ff4444';
+      ctx.fillStyle = bullet.homing ? '#ff00ff' : player.doubleShot ? '#ffff00' : currentShip.laserColor;
+      if (['nebula', 'stellar_crystal', 'alien_relic', 'cosmic_storm'].includes(currentShip.id)) {
+        ctx.shadowColor = currentShip.laserColor;
+        ctx.shadowBlur = 10;
+      }
     }
     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
     ctx.restore();
@@ -527,10 +709,9 @@ function updateAsteroids() {
   asteroids.forEach((asteroid, index) => {
     asteroid.y += asteroidSpeed;
 
-    // Verifica se o asteroide saiu da tela
     if (asteroid.y > canvas.height) {
       if (!player.shield) {
-        lives--;
+        lives = Math.max(0, lives - 1); // Garante que as vidas não fiquem negativas
         livesDisplay.textContent = `Vidas: ${lives}`;
         player.shield = true;
         setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
@@ -547,7 +728,6 @@ function updateAsteroids() {
       return;
     }
 
-    // Colisão com a nave
     if (
       !player.shield &&
       player.x < asteroid.x + asteroid.size &&
@@ -572,7 +752,6 @@ function updateAsteroids() {
       return;
     }
 
-    // Colisão com balas
     bullets.forEach((bullet, bulletIndex) => {
       if (
         bullet.x < asteroid.x + asteroid.size &&
@@ -588,7 +767,7 @@ function updateAsteroids() {
         localStorage.setItem('currency', currency);
         currencyDisplay.textContent = `Moedas: ${currency}`;
         scoreDisplay.textContent = `Pontos: ${score}`;
-        if (Math.random() < 0.1) spawnPowerUp(asteroid.x, asteroid.y);
+        if (Math.random() < 0.05) spawnPowerUp(asteroid.x, asteroid.y);
         if (score >= 1000 && !achievements.find(a => a.id === 'high_score_1000').unlocked) {
           unlockAchievement('high_score_1000');
         }
@@ -627,10 +806,9 @@ function updateEnemies() {
     if (enemy.movementPattern === 'zigzag') {
       enemy.x += Math.sin(enemy.zigzagPhase + Date.now() * 0.005) * 3;
     }
-    // Verifica se o inimigo saiu da tela
     if (enemy.y > canvas.height) {
       if (!player.shield) {
-        lives--;
+        lives = Math.max(0, lives - 1); // Garante que as vidas não fiquem negativas
         livesDisplay.textContent = `Vidas: ${lives}`;
         player.shield = true;
         setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
@@ -647,7 +825,6 @@ function updateEnemies() {
       return;
     }
 
-    // Colisão com a nave
     if (
       !player.shield &&
       player.x < enemy.x + enemy.size &&
@@ -655,7 +832,7 @@ function updateEnemies() {
       player.y < enemy.y + enemy.size &&
       player.y + player.height > enemy.y
     ) {
-      lives--;
+      lives = Math.max(0, lives - 1); // Garante que as vidas não fiquem negativas
       livesDisplay.textContent = `Vidas: ${lives}`;
       player.shield = true;
       setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
@@ -672,7 +849,6 @@ function updateEnemies() {
       return;
     }
 
-    // Colisão com balas
     bullets.forEach((bullet, bulletIndex) => {
       if (
         bullet.x < enemy.x + enemy.size &&
@@ -690,7 +866,7 @@ function updateEnemies() {
           localStorage.setItem('currency', currency);
           currencyDisplay.textContent = `Moedas: ${currency}`;
           scoreDisplay.textContent = `Pontos: ${score}`;
-          if (Math.random() < 0.2) spawnPowerUp(enemy.x, enemy.y);
+          if (Math.random() < 0.1) spawnPowerUp(enemy.x, enemy.y);
         }
       }
     });
@@ -969,7 +1145,7 @@ function updateBoss() {
             localStorage.setItem('achievement_defeat_emperor_zethar', 'true');
           }
         }
-        if (Math.random() < 0.5) spawnPowerUp(boss.x, boss.y);
+        if (Math.random() < 0.25) spawnPowerUp(boss.x, boss.y);
         for (let i = bullets.length - 1; i >= 0; i--) {
           if (bullets[i].homing === boss) {
             bullets.splice(i, 1);
@@ -987,7 +1163,7 @@ function updateBoss() {
           if (enemyInterval) clearInterval(enemyInterval);
           enemyInterval = setInterval(() => {
             if (!gameOver && !paused && gameStarted) spawnEnemy();
-          }, enemySpawnRate - (level - 7) * 100);
+          }, Math.max(3000, enemySpawnRate - (level - 7) * 100));
         }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawStars();
@@ -1015,7 +1191,7 @@ function updateBossBullets() {
       player.y < bullet.y + bullet.height &&
       player.y + player.height > bullet.y
     ) {
-      lives--;
+      lives = Math.max(0, lives - 1); // Garante que as vidas não fiquem negativas
       livesDisplay.textContent = `Vidas: ${lives}`;
       player.shield = true;
       setTimeout(() => { player.shield = false; }, upgrades.powerUpDuration.levels[upgrades.powerUpDuration.level]);
@@ -1040,7 +1216,9 @@ function drawBossBullets() {
 }
 
 function spawnPowerUp(x, y) {
-  const types = ['shield', 'fastShot', 'spreadShot', 'doubleShot', 'homingShot'];
+  const types = bossActive 
+    ? ['shield', 'fastShot', 'spreadShot', 'doubleShot']
+    : ['shield', 'fastShot', 'spreadShot', 'doubleShot', 'homingShot'];
   const type = types[Math.floor(Math.random() * types.length)];
   powerUps.push({
     x: x,
@@ -1116,92 +1294,31 @@ function updatePowerUps() {
   });
 }
 
-function spawnParticles(x, y, count) {
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: x,
-      y: y,
-      size: Math.random() * 5 + 2,
-      dx: Math.random() * 4 - 2,
-      dy: Math.random() * 4 - 2,
-      life: 30,
-      color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-      alpha: 1
-    });
+function updatePlayer() {
+  player.dx = 0;
+  player.dy = 0;
+
+  if (keys.ArrowLeft) player.dx = -player.speed;
+  if (keys.ArrowRight) player.dx = player.speed;
+  if (keys.ArrowUp) player.dy = -player.speed;
+  if (keys.ArrowDown) player.dy = player.speed;
+
+  if (touchState.dx !== 0 || touchState.dy !== 0) {
+    player.dx = touchState.dx;
+    player.dy = touchState.dy;
   }
-}
 
-function updateParticles() {
-  particles.forEach((particle, index) => {
-    particle.x += particle.dx;
-    particle.y += particle.dy;
-    particle.life--;
-    particle.alpha = particle.life / 30;
-    if (particle.life <= 0) {
-      particles.splice(index, 1);
-    }
-  });
-}
+  player.x += player.dx;
+  player.y += player.dy;
 
-function drawParticles() {
-  particles.forEach(particle => {
-    ctx.save();
-    ctx.globalAlpha = particle.alpha;
-    ctx.fillStyle = particle.color;
-    ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
-}
+  if (player.x < 0) player.x = 0;
+  if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+  if (player.y < 10) player.y = 10; // Prevent moving too far up
+  if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 
-function createStars() {
-  stars.length = 0;
-  for (let i = 0; i < 50; i++) {
-    stars.push({
-      x: Math.random() * (starfieldCanvas ? starfieldCanvas.width : canvas.width),
-      y: Math.random() * (starfieldCanvas ? starfieldCanvas.height : canvas.height),
-      size: Math.random() * 2 + 1,
-      speed: Math.random() * 0.5 + 0.1
-    });
+  if ((keys.Space || touchState.shoot) && !gameOver && !paused && gameStarted) {
+    shoot();
   }
-  backgroundObjects.length = 0;
-  for (let i = 0; i < 3; i++) {
-    backgroundObjects.push({
-      x: Math.random() * (starfieldCanvas ? starfieldCanvas.width : canvas.width),
-      y: Math.random() * (starfieldCanvas ? starfieldCanvas.height : canvas.height),
-      size: Math.random() * 100 + 50,
-      opacity: Math.random() * 0.2 + 0.1,
-      speed: Math.random() * 0.2 + 0.05
-    });
-  }
-}
-
-function drawStars() {
-  const targetCtx = starfieldCtx || ctx;
-  backgroundObjects.forEach(obj => {
-    targetCtx.fillStyle = `rgba(100, 100, 255, ${obj.opacity})`;
-    targetCtx.beginPath();
-    targetCtx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
-    targetCtx.fill();
-  });
-  targetCtx.fillStyle = '#fff';
-  stars.forEach(star => {
-    targetCtx.beginPath();
-    targetCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-    targetCtx.fill();
-  });
-}
-
-function updateStars() {
-  stars.forEach(star => {
-    star.y += star.speed;
-    if (star.y > (starfieldCanvas ? starfieldCanvas.height : canvas.height)) star.y = 0;
-  });
-  backgroundObjects.forEach(obj => {
-    obj.y += obj.speed;
-    if (obj.y > (starfieldCanvas ? starfieldCanvas.height : canvas.height) + obj.size) obj.y = -obj.size;
-  });
 }
 
 function startGame() {
@@ -1283,7 +1400,7 @@ function togglePause() {
 function updateLevel() {
   if (score >= level * 100) {
     level++;
-    asteroidSpeed += 0.15;
+    asteroidSpeed = Math.min(3, asteroidSpeed + 0.15); // Cap at 3
     asteroidSpawnRate = Math.max(500, asteroidSpawnRate - 50);
     if (asteroidInterval) clearInterval(asteroidInterval);
     asteroidInterval = setInterval(() => {
@@ -1385,17 +1502,15 @@ function updateShop() {
   shipItems.innerHTML = '';
   ships.forEach(ship => {
     const div = document.createElement('div');
-    div.className = `shop-item ${ship.unlocked ? '' : 'locked'} ${currentShip.id === ship.id ? 'selected' : ''} ${ship.cost >= 1000 || ship.id === 'rainbow' || ship.id === 'black_hole' ? 'legendary' : ''}`;
+    div.className = `shop-item ${ship.unlocked ? '' : 'locked'} ${currentShip.id === ship.id ? 'selected' : ''} ${ship.cost >= 1000 || ship.id === 'rainbow' ? 'legendary' : ''}`;
     let buttonHTML = '';
     let rarity = '';
     if (ship.id === 'default') {
       rarity = 'Comum';
-    } else if (ship.id === 'rainbow' || ship.id === 'black_hole') {
+    } else if (ship.id === 'rainbow' || ship.cost >= 1000) {
       rarity = 'Lendária';
     } else if (ship.cost === 500) {
       rarity = 'Rara';
-    } else {
-      rarity = 'Épica';
     }
     if (ship.id === 'rainbow' && !ship.unlocked) {
       buttonHTML = `<span class="locked-message">Derrote o Imperador Zethar para desbloquear</span>`;
@@ -1417,13 +1532,13 @@ function updateShop() {
   Object.keys(upgrades).forEach(type => {
     const upgrade = upgrades[type];
     const div = document.createElement('div');
-    div.className = `upgrade-item ${upgrade.level >= upgrade.levels.length ? 'locked' : ''}`;
+    div.className = `upgrade-item ${upgrade.level >= upgrade.levels.length - 1 ? 'locked' : ''}`;
     const level = upgrade.level;
-    const nextLevel = level < upgrade.levels.length ? upgrade.levels[level] : 'Máximo';
-    const cost = level < upgrade.costs.length ? upgrade.costs[level] : 0;
+    const nextLevel = level < upgrade.levels.length - 1 ? upgrade.levels[level + 1] : 'Máximo';
+    const cost = level < upgrade.levels.length - 1 ? upgrade.costs[level] : 0;
     div.innerHTML = `
       <span>${type === 'health' ? 'Vidas' : type === 'powerUpDuration' ? 'Duração de Power-Ups' : type === 'speed' ? 'Velocidade' : 'Taxa de Tiro'}: ${nextLevel}</span>
-      ${level < upgrade.levels.length ? `<span>Custo: ${cost} Moedas</span><button class="buy-upgrade" data-type="${type}">Comprar</button>` : '<span>Nível Máximo</span>'}
+      ${level < upgrade.levels.length - 1 ? `<span>Custo: ${cost} Moedas</span><button class="buy-upgrade" data-type="${type}">Comprar</button>` : '<span>Nível Máximo</span>'}
     `;
     upgradeItems.appendChild(div);
   });
@@ -1438,6 +1553,12 @@ function updateShop() {
         ship.unlocked = true;
         localStorage.setItem('currency', currency);
         localStorage.setItem(`ship_${id}`, 'true');
+        if (typeof playSound === 'function') {
+          console.log('Tentando tocar upgradeBuy para compra de nave');
+          playSound('upgradeBuy');
+        } else {
+          console.error('Função playSound não definida ao comprar nave');
+        }
         updateShop();
       } else {
         console.log('Compra de nave falhou: moedas insuficientes ou nave já desbloqueada');
@@ -1453,6 +1574,12 @@ function updateShop() {
       if (ship && ship.unlocked) {
         currentShip = ship;
         localStorage.setItem('currentShip', id);
+        if (typeof playSound === 'function') {
+          console.log('Tentando tocar menuClick para seleção de nave');
+          playSound('menuClick');
+        } else {
+          console.error('Função playSound não definida ao selecionar nave');
+        }
         updateShop();
       } else {
         console.log('Seleção de nave falhou: nave não desbloqueada');
@@ -1465,13 +1592,19 @@ function updateShop() {
       console.log(`Tentando comprar upgrade: ${button.dataset.type}`);
       const type = button.dataset.type;
       const upgrade = upgrades[type];
-      if (upgrade.level < upgrade.levels.length && currency >= upgrade.costs[upgrade.level]) {
+      if (upgrade.level < upgrade.levels.length - 1 && currency >= upgrade.costs[upgrade.level]) {
         currency -= upgrade.costs[upgrade.level];
         upgrade.level++;
         localStorage.setItem('currency', currency);
         localStorage.setItem(`${type}Level`, upgrade.level);
         if (type === 'speed') player.speed = upgrade.levels[upgrade.level];
         if (type === 'fireRate') player.fireRate = upgrade.levels[upgrade.level];
+        if (typeof playSound === 'function') {
+          console.log('Tentando tocar upgradeBuy para compra de upgrade');
+          playSound('upgradeBuy');
+        } else {
+          console.error('Função playSound não definida ao comprar upgrade');
+        }
         updateShop();
       } else {
         console.log('Compra de upgrade falhou: moedas insuficientes ou nível máximo atingido');
@@ -1479,6 +1612,26 @@ function updateShop() {
     });
   });
 }
+
+  document.querySelectorAll('.buy-upgrade').forEach(button => {
+  button.addEventListener('click', () => {
+    console.log(`Tentando comprar upgrade: ${button.dataset.type}`);
+    const type = button.dataset.type;
+    const upgrade = upgrades[type];
+    if (upgrade.level < upgrade.levels.length - 1 && currency >= upgrade.costs[upgrade.level]) {
+      currency -= upgrade.costs[upgrade.level];
+      upgrade.level++;
+      localStorage.setItem('currency', currency);
+      localStorage.setItem(`${type}Level`, upgrade.level);
+      if (type === 'speed') player.speed = upgrade.levels[upgrade.level];
+      if (type === 'fireRate') player.fireRate = upgrade.levels[upgrade.level];
+      updateShop();
+    } else {
+      console.log('Compra de upgrade falhou: moedas insuficientes ou nível máximo atingido');
+    }
+  });
+});
+
 
 function updateAchievements() {
   console.log('Atualizando conquistas...');
