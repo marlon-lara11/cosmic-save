@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Nave Espacial</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+  <canvas id="gameCanvas"></canvas>
+  <div id="score">Pontos: 0</div>
+  <div id="lives">Vidas: 3</div>
+  <div id="level">Nível: 1</div>
+  <div id="currency">Moedas: 0</div>
+  <div id="start-screen" class="show">
+    <h1>Iniciar Jogo</h1>
+    <button id="start-game-btn">Iniciar</button>
+  </div>
+  <div id="pause-screen">
+    <h1>Jogo Pausado</h1>
+    <button id="resume-btn">Continuar</button>
+    <button id="restart-pause-btn">Voltar ao Menu</button>
+  </div>
+  <div id="game-over">
+    <h1>Fim de Jogo</h1>
+    <div id="final-score">Pontos: 0</div>
+    <button id="restart-btn">Voltar ao Menu</button>
+  </div>
+  <div id="boss-warning">
+    <h1>Aviso de Chefe</h1>
+    <p id="dialogue"></p>
+  </div>
+  <div id="achievement-notification"></div>
+  <div id="touch-controls">
+    <div id="joystick-base">
+      <div id="joystick-knob"></div>
+    </div>
+    <div id="touch-shoot"></div>
+  </div>
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
