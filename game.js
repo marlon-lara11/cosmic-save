@@ -4,7 +4,7 @@ let canvas, ctx, scoreDisplay, livesDisplay, levelDisplay, currencyDisplay,
     startScreen, pauseScreen, gameOverScreen, bossWarning, finalScoreDisplay,
     startGameBtn, resumeBtn, restartBtn, restartPauseBtn, dialogue,
     achievementNotification, touchControls, joystickBase, joystickKnob, touchShoot,
-    score = 0, lives = 3, level = 1, currency =   1111000000
+    score = 0, lives = 3, level = 1, currency = parseInt(localStorage.getItem('currency')) || 0
     gameOver = false, paused = false, gameStarted = false, asteroidSpeed = 1,
     asteroidSpawnRate = 2000, bossActive = false, boss = null, bossBullets = [],
     bossDialogueTimer = 0, lastBossPowerUp = 0, hitFlashTimer = 0,
