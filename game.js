@@ -4,7 +4,7 @@ let canvas, ctx, scoreDisplay, livesDisplay, levelDisplay, currencyDisplay,
     startScreen, pauseScreen, gameOverScreen, bossWarning, finalScoreDisplay,
     startGameBtn, resumeBtn, restartBtn, restartPauseBtn, dialogue,
     achievementNotification, touchControls, joystickBase, joystickKnob, touchShoot,
-    score = 0, lives = 3, level = 1, currency =  parseInt(localStorage.getItem('currency')) || 0
+    score = 0, lives = 3, level = 1, currency =   1111000000
     gameOver = false, paused = false, gameStarted = false, asteroidSpeed = 1,
     asteroidSpawnRate = 2000, bossActive = false, boss = null, bossBullets = [],
     bossDialogueTimer = 0, lastBossPowerUp = 0, hitFlashTimer = 0,
@@ -58,8 +58,45 @@ const achievements = [
     name: 'Sobrevivente Cósmico',
     description: 'Sobreviva por 5 minutos sem perder todas as vidas.',
     unlocked: localStorage.getItem('achievement_survive_5_minutes') === 'true' || false
+  },
+  {
+    id: 'asteroid_killer',
+    name: 'Matador de Asteroides',
+    description: 'Destrua 100 asteroides em uma única partida.',
+    unlocked: localStorage.getItem('achievement_asteroid_killer') === 'true' || false
+  },
+  {
+    id: 'enemy_hunter',
+    name: 'Caçador de Inimigos',
+    description: 'Derrote 50 inimigos normais em uma única partida.',
+    unlocked: localStorage.getItem('achievement_enemy_hunter') === 'true' || false
+  },
+  {
+    id: 'cosmic_dodger',
+    name: 'Evasor Cósmico',
+    description: 'Sobreviva por 2 minutos sem sofrer dano.',
+    unlocked: localStorage.getItem('achievement_cosmic_dodger') === 'true' || false
+  },
+  {
+    id: 'coin_collector',
+    name: 'Colecionador de Moedas',
+    description: 'Acumule 5000 moedas totais.',
+    unlocked: localStorage.getItem('achievement_coin_collector') === 'true' || false
+  },
+  {
+    id: 'bullet_master',
+    name: 'Mestre das Balas',
+    description: 'Dispare 1000 tiros em uma única partida.',
+    unlocked: localStorage.getItem('achievement_bullet_master') === 'true' || false
+  },
+  {
+    id: 'powerup_specialist',
+    name: 'Especialista em Power-Ups',
+    description: 'Coletar 20 power-ups em uma única partida.',
+    unlocked: localStorage.getItem('achievement_powerup_specialist') === 'true' || false
   }
 ];
+
 
 const upgrades = {
   health: {
@@ -85,16 +122,20 @@ const upgrades = {
 };
 
 const ships = [
-  { id: 'default', name: 'Nave Padrão', color: '#00ff88', cost: 0, unlocked: true, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
-  { id: 'rainbow', name: 'Nave Arco-Íris', color: 'rainbow', cost: 0, unlocked: localStorage.getItem('achievement_defeat_emperor_zethar') === 'true' || false, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
-  { id: 'fire', name: 'Nave de Fogo', color: '#ff4444', cost: 500, unlocked: localStorage.getItem('ship_fire') === 'true' || false, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect' },
-  { id: 'ice', name: 'Nave de Gelo', color: '#00b7eb', cost: 500, unlocked: localStorage.getItem('ship_ice') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#00b7eb', laserShape: 'rect' },
-  { id: 'plasma', name: 'Nave de Plasma', color: '#aa00ff', cost: 500, unlocked: localStorage.getItem('ship_plasma') === 'true' || false, thrusterColor: '#ff00ff', laserColor: '#ff00ff', laserShape: 'rect' },
-  { id: 'black_hole', name: 'Nave de Singularidade', color: '#000000', cost: 1200, unlocked: localStorage.getItem('ship_black_hole') === 'true' || false, thrusterColor: '#8b0000', laserColor: '#ff0000', laserShape: 'rect', effect: 'distortion' },
-  { id: 'nebula', name: 'Nave de Nebulosa', color: 'gradient', cost: 1000, unlocked: localStorage.getItem('ship_nebula') === 'true' || false, thrusterColor: 'gradient', laserColor: '#aa00ff', laserShape: 'rect' },
-  { id: 'stellar_crystal', name: 'Nave de Cristal Estelar', color: '#00b7eb', cost: 1000, unlocked: localStorage.getItem('ship_stellar_crystal') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#ffffff', laserShape: 'rect' },
-  { id: 'alien_relic', name: 'Nave de Relíquia Alienígena', color: '#006400', cost: 1000, unlocked: localStorage.getItem('ship_alien_relic') === 'true' || false, thrusterColor: '#00ff00', laserColor: '#00ff00', laserShape: 'rect' },
-  { id: 'cosmic_storm', name: 'Nave de Tempestade Cósmica', color: '#333333', cost: 1000, unlocked: localStorage.getItem('ship_cosmic_storm') === 'true' || false, thrusterColor: '#00b7eb', laserColor: '#00b7eb', laserShape: 'rect' }
+  { id: 'default', name: 'Nave Padrão', color: '#00ff88', cost: 0, unlocked: true, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect', rarity: 'common' },
+  { id: 'star', name: 'Nave Estelar', color: '#c0c0c0', cost: 200, unlocked: true, thrusterColor: '#ffffff', laserColor: '#ffffff', laserShape: 'rect', rarity: 'common' },
+  { id: 'scout', name: 'Nave de Reconhecimento', color: '#666666', cost: 200, unlocked: true, thrusterColor: '#00b7eb', laserColor: '#00b7eb', laserShape: 'rect', rarity: 'common' },
+  { id: 'patrol', name: 'Nave de Patrulha', color: '#006400', cost: 200, unlocked: true, thrusterColor: '#ff8800', laserColor: '#ff8800', laserShape: 'rect', rarity: 'common' },
+  { id: 'fire', name: 'Nave de Fogo', color: '#ff4444', cost: 500, unlocked: localStorage.getItem('ship_fire') === 'true' || false, thrusterColor: '#ff8800', laserColor: '#ff4444', laserShape: 'rect', rarity: 'rare' },
+  { id: 'ice', name: 'Nave de Gelo', color: '#00b7eb', cost: 500, unlocked: localStorage.getItem('ship_ice') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#00b7eb', laserShape: 'rect', rarity: 'rare' },
+  { id: 'magma', name: 'Nave de Magma', color: '#8b0000', cost: 500, unlocked: localStorage.getItem('ship_magma') === 'true' || false, thrusterColor: '#ff4500', laserColor: '#ff4500', laserShape: 'rect', effect: 'heat', rarity: 'rare' },
+  { id: 'aurora', name: 'Nave de Aurora', color: '#00ced1', cost: 500, unlocked: localStorage.getItem('ship_aurora') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#00ced1', laserShape: 'rect', effect: 'glow', rarity: 'rare' },
+  { id: 'titanium', name: 'Nave de Titânio', color: '#4682b4', cost: 500, unlocked: localStorage.getItem('ship_titanium') === 'true' || false, thrusterColor: '#c0c0c0', laserColor: '#c0c0c0', laserShape: 'rect', rarity: 'rare' },
+  { id: 'black_hole', name: 'Nave de Singularidade', color: '#000000', cost: 1200, unlocked: localStorage.getItem('ship_black_hole') === 'true' || false, thrusterColor: '#8b0000', laserColor: '#ff0000', laserShape: 'rect', effect: 'distortion', rarity: 'legendary' },
+  { id: 'nebula', name: 'Nave de Nebulosa', color: 'gradient', cost: 1000, unlocked: localStorage.getItem('ship_nebula') === 'true' || false, thrusterColor: 'gradient', laserColor: '#aa00ff', laserShape: 'rect', effect: 'nebula', rarity: 'legendary' },
+  { id: 'stellar_crystal', name: 'Nave de Cristal Estelar', color: '#00b7eb', cost: 1000, unlocked: localStorage.getItem('ship_stellar_crystal') === 'true' || false, thrusterColor: '#ffffff', laserColor: '#ffffff', laserShape: 'rect', rarity: 'legendary' },
+  { id: 'alien_relic', name: 'Nave de Relíquia Alienígena', color: '#006400', cost: 1000, unlocked: localStorage.getItem('ship_alien_relic') === 'true' || false, thrusterColor: '#00ff00', laserColor: '#00ff00', laserShape: 'rect', rarity: 'legendary' },
+  { id: 'rainbow', name: 'Nave Zethar', color: 'rainbow', cost: 0, unlocked: localStorage.getItem('achievement_defeat_emperor_zethar') === 'true' || false, thrusterColor: 'rainbow', laserColor: 'rainbow', laserShape: 'rect', rarity: 'rainbow' }
 ];
 let currentShip = ships.find(ship => ship.id === (localStorage.getItem('currentShip') || 'default')) || ships[0];
 
@@ -327,6 +368,30 @@ function initializeGame() {
   joystickKnob = document.getElementById('joystick-knob');
   touchShoot = document.getElementById('touch-shoot');
 
+  console.log('Elementos encontrados em game.html:', {
+    canvas: !!canvas,
+    ctx: !!ctx,
+    scoreDisplay: !!scoreDisplay,
+    livesDisplay: !!livesDisplay,
+    levelDisplay: !!levelDisplay,
+    currencyDisplay: !!currencyDisplay,
+    startScreen: !!startScreen,
+    pauseScreen: !!pauseScreen,
+    gameOverScreen: !!gameOverScreen,
+    bossWarning: !!bossWarning,
+    finalScoreDisplay: !!finalScoreDisplay,
+    startGameBtn: !!startGameBtn,
+    resumeBtn: !!resumeBtn,
+    restartBtn: !!restartBtn,
+    restartPauseBtn: !!restartPauseBtn,
+    dialogue: !!dialogue,
+    achievementNotification: !!achievementNotification,
+    touchControls: !!touchControls,
+    joystickBase: !!joystickBase,
+    joystickKnob: !!joystickKnob,
+    touchShoot: !!touchShoot
+  });
+
   if (!canvas || !ctx || !scoreDisplay || !livesDisplay || !levelDisplay || !currencyDisplay ||
       !startScreen || !pauseScreen || !gameOverScreen || !bossWarning || !finalScoreDisplay ||
       !startGameBtn || !resumeBtn || !restartBtn || !restartPauseBtn || !dialogue ||
@@ -444,23 +509,23 @@ function initializeGame() {
   });
 
   startGameBtn.addEventListener('click', () => {
-    console.log('Botão Iniciar Jogo clicado');
-    playSound('menuClick'); // Adicionado
+    console.log('Evento de clique disparado para start-game-btn');
+    playMenuSound('Iniciar Jogo');
     startGame();
   });
   resumeBtn.addEventListener('click', () => {
-    console.log('Botão Continuar clicado');
-    playSound('menuClick'); // Adicionado
+    console.log('Evento de clique disparado para resume-btn');
+    playMenuSound('Continuar');
     togglePause();
   });
   restartBtn.addEventListener('click', () => {
-    console.log('Botão Reiniciar (Game Over) clicado');
-    playSound('menuClick'); // Adicionado
+    console.log('Evento de clique disparado para restart-btn');
+    playMenuSound('Reiniciar (Game Over)');
     returnToMenu();
   });
   restartPauseBtn.addEventListener('click', () => {
-    console.log('Botão Reiniciar (Pausa) clicado');
-    playSound('menuClick'); // Adicionado
+    console.log('Evento de clique disparado para restart-pause-btn');
+    playMenuSound('Reiniciar (Pausa)');
     returnToMenu();
   });
 
@@ -684,9 +749,28 @@ function drawBullets() {
       ctx.fillStyle = currentShip.laserColor;
       ctx.shadowColor = '#ff0000';
       ctx.shadowBlur = 10;
+    } else if (bullet.effect === 'heat') {
+      ctx.fillStyle = currentShip.laserColor;
+      ctx.shadowColor = '#ff4500';
+      ctx.shadowBlur = 10;
+    } else if (bullet.effect === 'glow') {
+      ctx.fillStyle = currentShip.laserColor;
+      ctx.shadowColor = '#00ced1';
+      ctx.shadowBlur = 15;
+    } else if (bullet.effect === 'nebula') {
+      const gradient = ctx.createLinearGradient(bullet.x, bullet.y, bullet.x, bullet.y + bullet.height);
+      gradient.addColorStop(0, '#aa00ff');
+      gradient.addColorStop(1, '#ff69b4');
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = '#aa00ff';
+      ctx.shadowBlur = 10;
+    } else if (currentShip.laserColor === 'rainbow') {
+      ctx.fillStyle = `hsl(${Date.now() % 360}, 70%, 50%)`;
+      ctx.shadowColor = `hsl(${(Date.now() + 180) % 360}, 70%, 50%)`;
+      ctx.shadowBlur = 12;
     } else {
       ctx.fillStyle = bullet.homing ? '#ff00ff' : player.doubleShot ? '#ffff00' : currentShip.laserColor;
-      if (['nebula', 'stellar_crystal', 'alien_relic', 'cosmic_storm'].includes(currentShip.id)) {
+      if (['stellar_crystal', 'alien_relic', 'cosmic_storm'].includes(currentShip.id)) {
         ctx.shadowColor = currentShip.laserColor;
         ctx.shadowBlur = 10;
       }
@@ -1698,11 +1782,69 @@ function returnToMenu() {
 
 if (currentPage === 'index.html' || currentPage === '') {
   const resetBtn = document.getElementById('reset-btn');
+  const playBtn = document.getElementById('play-btn');
+  const shopBtn = document.getElementById('shop-btn');
+  const achievementsBtn = document.getElementById('achievements-btn');
+  const loreBtn = document.getElementById('lore-btn');
+
+  console.log('Elementos encontrados em index.html:', {
+    resetBtn: !!resetBtn,
+    playBtn: !!playBtn,
+    shopBtn: !!shopBtn,
+    achievementsBtn: !!achievementsBtn,
+    loreBtn: !!loreBtn
+  });
+
   if (resetBtn) {
-    resetBtn.addEventListener('click', resetProgress);
+    resetBtn.addEventListener('click', () => {
+      console.log('Evento de clique disparado para reset-btn');
+      playMenuSound('Reiniciar Progresso');
+      resetProgress();
+    });
   } else {
     console.error('Botão de reiniciar progresso não encontrado em index.html.');
   }
+
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      console.log('Evento de clique disparado para play-btn');
+      playMenuSound('Jogar');
+      window.location.href = 'game.html';
+    });
+  } else {
+    console.error('Botão de jogar não encontrado em index.html.');
+  }
+
+  if (shopBtn) {
+    shopBtn.addEventListener('click', () => {
+      console.log('Evento de clique disparado para shop-btn');
+      playMenuSound('Loja');
+      window.location.href = 'shop.html';
+    });
+  } else {
+    console.error('Botão de loja não encontrado em index.html.');
+  }
+
+  if (achievementsBtn) {
+    achievementsBtn.addEventListener('click', () => {
+      console.log('Evento de clique disparado para achievements-btn');
+      playMenuSound('Conquistas');
+      window.location.href = 'achievements.html';
+    });
+  } else {
+    console.error('Botão de conquistas não encontrado em index.html.');
+  }
+
+  if (loreBtn) {
+    loreBtn.addEventListener('click', () => {
+      console.log('Evento de clique disparado para lore-btn');
+      playMenuSound('Lore');
+      window.location.href = 'lore.html';
+    });
+  } else {
+    console.error('Botão de lore não encontrado em index.html.');
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     console.log('Carregando index.html...');
     initializeStarfield();
@@ -1717,11 +1859,33 @@ if (currentPage === 'index.html' || currentPage === '') {
     console.log('Carregando shop.html...');
     initializeStarfield();
     updateShop();
+    const returnMenuBtn = document.getElementById('return-menu-btn');
+    console.log('return-menu-btn em shop.html:', !!returnMenuBtn);
+    if (returnMenuBtn) {
+      returnMenuBtn.addEventListener('click', () => {
+        console.log('Evento de clique disparado para return-menu-btn (shop.html)');
+        playMenuSound('Voltar ao Menu (Loja)');
+        returnToMenu();
+      });
+    } else {
+      console.error('Botão de voltar ao menu não encontrado em shop.html.');
+    }
   });
 } else if (currentPage === 'achievements.html' || currentPage === 'lore.html') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log(`Carregando ${currentPage}...`);
     initializeStarfield();
     if (currentPage === 'achievements.html') updateAchievements();
+    const returnMenuBtn = document.getElementById('return-menu-btn');
+    console.log(`return-menu-btn em ${currentPage}:`, !!returnMenuBtn);
+    if (returnMenuBtn) {
+      returnMenuBtn.addEventListener('click', () => {
+        console.log(`Evento de clique disparado para return-menu-btn (${currentPage})`);
+        playMenuSound(`Voltar ao Menu (${currentPage})`);
+        returnToMenu();
+      });
+    } else {
+      console.error('Botão de voltar ao menu não encontrado em ' + currentPage);
+    }
   });
 }
